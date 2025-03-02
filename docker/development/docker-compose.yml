@@ -1,38 +1,67 @@
-version: "3"
 services:
   directus:
-    image: directus/directus:latest
+    image: directus/directus:10.8.3
     ports:
       - "8055:8055"
     volumes:
-      - ../extensions:/directus/extensions
+      - ../../extensions:/directus/extensions
       - directus-uploads:/directus/uploads
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+    networks:
+      - directus-net
     environment:
-      KEY: "${KEY}"
-      SECRET: "${SECRET}"
-      ADMIN_EMAIL: "${ADMIN_EMAIL}"
-      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
-      DB_CLIENT: "pg"
+      KEY: "255d861b-5ea1-5996-9aa3-922530ec40b1"
+      SECRET: "6116487b-cda1-52c2-b5b5-c8022c45e263"
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "admin123"
+      DB_CLIENT: "mysql"
       DB_HOST: "database"
-      DB_PORT: "5432"
-      DB_DATABASE: "${DB_DATABASE}"
-      DB_USER: "${DB_USER}"
-      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_PORT: "3306"
+      DB_DATABASE: "directus"
+      DB_USER: "directus"
+      DB_PASSWORD: "directus123"
       CORS_ENABLED: "true"
       CORS_ORIGIN: "*"
-      PUBLIC_URL: "${PUBLIC_URL}"
+      PUBLIC_URL: "http://localhost:8055"
 
   database:
-    image: postgres:13
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mysql-data:/var/lib/mysql
+    networks:
+      - directus-net
     environment:
-      POSTGRES_USER: "${DB_USER}"
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
-      POSTGRES_DB: "${DB_DATABASE}"
+      MYSQL_ROOT_PASSWORD: "directus123"
+      MYSQL_DATABASE: "directus"
+      MYSQL_USER: "directus"
+      MYSQL_PASSWORD: "directus123"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "directus",
+          "-pdirectus123",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    cap_add:
+      - SYS_NICE
+
+networks:
+  directus-net:
+    driver: bridge
 
 volumes:
-  postgres-data:
+  mysql-data:
   directus-uploads:
